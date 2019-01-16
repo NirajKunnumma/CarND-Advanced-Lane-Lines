@@ -4,9 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 
-def warp_image(img):
-    image = np.copy(img)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def warp_image(gray_img):
+    image = np.copy(gray_img)
 
     # Select point by viewing on image
     top_left = [575, 475]
@@ -19,7 +18,7 @@ def warp_image(img):
     dst = np.float32([[200, 0], [200, 700], [1000, 0], [1000, 700]])
 
     # Grab the image shape
-    img_size = (gray.shape[1], gray.shape[0])
+    img_size = (gray_img.shape[1], gray_img.shape[0])
 
     # Given src and dst points, calculate the perspective transform matrix
     M = cv2.getPerspectiveTransform(src, dst)
@@ -35,6 +34,8 @@ if __name__ == '__main__':
     image = mpimg.imread('test_images/test2.jpg')
 
     temp_image = np.copy(image)
+
+
 
     warped_image, M = warp_image(temp_image)
 
