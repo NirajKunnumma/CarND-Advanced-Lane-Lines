@@ -34,6 +34,10 @@ def get_calibration_coefficients(image_path, nx, ny):
     return ret, mtx, dist, rvecs, tvecs
 
 
+def undistort_image(image, mtx, dist):
+    return cv2.undistort(image, mtx, dist, None, mtx)
+
+
 if __name__ == '__main__':
     ret, mtx, dist, rvecs, tvecs = get_calibration_coefficients('camera_cal', 9, 6)
 
