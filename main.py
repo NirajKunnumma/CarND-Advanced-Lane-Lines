@@ -1,24 +1,24 @@
 import os
 import cv2
+import argparse
 import matplotlib.image as mpimg
 
 import camera_calibration as cc
 import color_transforms as ct
 import perspective_transforms as pt
 import find_lanes as fl
+from moviepy.editor import VideoFileClip
+
+parser = argparse.ArgumentParser(description="Advanced Lane Finding")
 
 
 class LaneFinder:
-
     left_fit = None
     right_fit = None
-    prev_left = None
-    prev_right = None
-    count = 0
-    reset = 0
+    is_initial = True
 
-    def __init__(self):
-        _, mtx, dist, _, _ = cc.get_calibration_coefficients('camera_cal', 9, 6)
+    def __init__(self, mtx, dist):
+
         self.mtx = mtx
         self.dist = dist
 
@@ -27,28 +27,12 @@ class LaneFinder:
         combined_binary = self.color_and_gradient_transform(img)
         warped_img, M = pt.warp_image(combined_binary)
 
-        if self.count == 0:
+        if self.is_initial:
             self.left_fit, self.right_fit, left_lane_inds, right_lane_inds, nonzerox, nonzeroy = fl.find_lane_pixels(
                 warped_img)
+            self.is_initial = False
         else:
             self.left_fit, self.right_fit = fl.search_around_polly(warped_img, self.left_fit, self.right_fit)
-
-        status = fl.validate_lines(self.left_fit, self.right_fit)
-
-        if status == True:
-            self.prev_left, self.prev_right = self.left_fit, self.right_fit
-            self.count += 1
-            self.reset = 0
-        else:
-            # Reset
-            if self.reset > 4:
-                self.left_fit, self.right_fit, left_lane_inds, right_lane_inds, nonzerox, nonzeroy = fl.find_lane_pixels(
-                    warped_img)
-                self.reset = 0
-            else:
-                self.left_fit, self.right_fit = self.prev_left, self.prev_right
-
-                self.reset += 1
 
         return warped_img, self.left_fit, self.right_fit, M
 
@@ -71,27 +55,41 @@ class LaneFinder:
         return fl.draw_lanes(img, warped_img, left_fit, right_fit, M, left_curvature, right_curvature, center)
 
 
+def initialize_parser():
+    parser.add_argument("-i", "--input", required=True, help="Path to input files")
+    parser.add_argument("-o", "--output", required=True, help="Path to output files")
+
+
 if __name__ == '__main__':
-    write_path = 'output_images/lane_lines/'
 
-    laneFinder = LaneFinder()
-    for image_file in os.listdir('test_images/'):
-        if image_file.endswith('.jpg'):
-            image = mpimg.imread(os.path.join('test_images/', image_file))
-            cv2.imwrite(write_path + 'original_' + image_file, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-            image = laneFinder.lane_drawing_pipeline(image)
-            cv2.imwrite(write_path + 'lanes_' + image_file, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+    initialize_parser()
+    args = parser.parse_args()
+
+    print("1. Starting Camera Calibration")
+    _, mtx, dist, _, _ = cc.get_calibration_coefficients('camera_cal', 9, 6)
+    print("2. Camera Calibrations Obtained")
+
+    print("3. Finding Lanes....")
+    if args.input and len(args.input) and args.output and len(args.output):
+        input_path = args.input
+        output_path = args.output
+        for input_file in os.listdir(input_path):
+            if input_file.endswith('.jpg'):
+                laneFinder = LaneFinder(mtx, dist)
+                image = mpimg.imread(os.path.join(input_path, input_file))
+                image = laneFinder.lane_drawing_pipeline(image)
+                cv2.imwrite(os.path.join(output_path, input_file), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+            elif input_file.endswith('.mp4'):
+                laneFinder = LaneFinder(mtx, dist)
+
+                def process_image(img):
+                    return laneFinder.lane_drawing_pipeline(img)
+
+                white_output = os.path.join(output_path, input_file)
+                clip1 = VideoFileClip(os.path.join(input_path, input_file))
+                white_clip = clip1.fl_image(process_image)
+                white_clip.write_videofile(white_output, audio=False)
+    else:
+        print("Please specify input and output folders")
 
 
-    # laneFinder = LaneFinder()
-    #
-    # def process_image(img):
-    #     return laneFinder.lane_drawing_pipeline(img)
-    #
-    #
-    # from moviepy.editor import VideoFileClip
-    #
-    # white_output = 'output_video/project_video.mp4'
-    # clip1 = VideoFileClip("project_video.mp4")
-    # white_clip = clip1.fl_image(process_image)
-    # white_clip.write_videofile(white_output, audio=False)

@@ -9,8 +9,6 @@ def get_calibration_coefficients(image_path, nx, ny):
     images = [mpimg.imread(os.path.join(image_path, image_file)) for image_file in os.listdir(image_path) if
               image_file.endswith('.jpg')]
 
-    print(len(images))
-
     object_points = []
     image_points = []
 
@@ -26,8 +24,6 @@ def get_calibration_coefficients(image_path, nx, ny):
             object_points.append(object_point)
 
     gray_image_shape = cv2.cvtColor(images[0], cv2.COLOR_BGR2GRAY).shape[::-1]
-
-    print(gray_image_shape)
 
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(object_points, image_points, gray_image_shape, None, None)
 
