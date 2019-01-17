@@ -31,7 +31,7 @@ def warp_image(gray_img):
 
 
 if __name__ == '__main__':
-    image = mpimg.imread('test_images/test2.jpg')
+    image = mpimg.imread('test_images/test1.jpg')
 
     temp_image = np.copy(image)
 

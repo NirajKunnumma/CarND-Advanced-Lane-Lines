@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -91,25 +92,60 @@ def combine_color_transforms(sobelx_binary, sobely_binary, mag_binary, dir_binar
 
 
 if __name__ == '__main__':
-    image = mpimg.imread('test_images/test2.jpg')
+    # image = mpimg.imread('test_images/test2.jpg')
+    #
+    # temp_image = np.copy(image)
+    #
+    # kernel_size = 3
+    #
+    # sobelx_binary = abs_sobel_thresh(temp_image, orient='x', sobel_kernel=kernel_size, thresh=(20, 100))
+    # sobely_binary = abs_sobel_thresh(temp_image, orient='y', sobel_kernel=kernel_size, thresh=(20, 100))
+    # mag_binary = mag_thresh(temp_image, sobel_kernel=kernel_size, thresh=(20, 100))
+    # dir_binary = dir_threshold(temp_image, sobel_kernel=kernel_size, thresh=(0.7, 1.4))
+    # hls_binary = hls_select(temp_image, thresh=(150, 255))
+    #
+    # combined_binary = combine_color_transforms(sobelx_binary, sobely_binary, mag_binary, dir_binary, hls_binary)
+    #
+    # f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(20, 10))
+    # ax1.set_title('Actual image')
+    # ax1.imshow(image)
+    # ax2.set_title('Color thresholding')
+    # ax2.imshow(hls_binary, cmap='gray')
+    # ax3.set_title('Combined all')
+    # ax3.imshow(combined_binary, cmap='gray')
+    # plt.show()
 
-    temp_image = np.copy(image)
+    write_path = 'output_images/color_and_gradient_thresholds/'
 
-    kernel_size = 3
+    pt_write_path = 'output_images/perspective_transforms/'
 
-    sobelx_binary = abs_sobel_thresh(temp_image, orient='x', sobel_kernel=kernel_size, thresh=(20, 100))
-    sobely_binary = abs_sobel_thresh(temp_image, orient='y', sobel_kernel=kernel_size, thresh=(20, 100))
-    mag_binary = mag_thresh(temp_image, sobel_kernel=kernel_size, thresh=(20, 100))
-    dir_binary = dir_threshold(temp_image, sobel_kernel=kernel_size, thresh=(0.7, 1.4))
-    hls_binary = hls_select(temp_image, thresh=(150, 255))
+    import perspective_transforms as pt
 
-    combined_binary = combine_color_transforms(sobelx_binary, sobely_binary, mag_binary, dir_binary, hls_binary)
+    for image_file in os.listdir('test_images/'):
+        if image_file.endswith('.jpg'):
+            image = mpimg.imread(os.path.join('test_images/', image_file))
 
-    f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(20, 10))
-    ax1.set_title('Actual image')
-    ax1.imshow(image)
-    ax2.set_title('Color thresholding')
-    ax2.imshow(hls_binary, cmap='gray')
-    ax3.set_title('Combined all')
-    ax3.imshow(combined_binary, cmap='gray')
-    plt.show()
+            kernel_size = 3
+
+            sobelx_binary = abs_sobel_thresh(image, orient='x', sobel_kernel=kernel_size, thresh=(20, 100))
+            cv2.imwrite(write_path + 'sobelx_' + image_file, sobelx_binary * 255)
+
+            sobely_binary = abs_sobel_thresh(image, orient='y', sobel_kernel=kernel_size, thresh=(20, 100))
+            cv2.imwrite(write_path + 'sobely_' + image_file, sobely_binary * 255)
+
+            mag_binary = mag_thresh(image, sobel_kernel=kernel_size, thresh=(20, 100))
+            cv2.imwrite(write_path + 'mag_binary_' + image_file, mag_binary * 255)
+
+            dir_binary = dir_threshold(image, sobel_kernel=kernel_size, thresh=(0.7, 1.4))
+            cv2.imwrite(write_path + 'dir_binary_' + image_file, dir_binary * 255)
+
+            hls_binary = hls_select(image, thresh=(150, 255))
+            cv2.imwrite(write_path + 'hls_binary_' + image_file, hls_binary * 255)
+
+            combined_binary = combine_color_transforms(sobelx_binary, sobely_binary, mag_binary, dir_binary, hls_binary)
+            cv2.imwrite(write_path + 'combined_binary_' + image_file, combined_binary * 255)
+            cv2.imwrite(pt_write_path + 'original_binary_' + image_file, combined_binary * 255)
+
+            transformed_image, _ = pt.warp_image(combined_binary * 255)
+            cv2.imwrite(pt_write_path + 'warped_' + image_file, transformed_image)
+

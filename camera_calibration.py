@@ -41,9 +41,16 @@ def undistort_image(image, mtx, dist):
 if __name__ == '__main__':
     ret, mtx, dist, rvecs, tvecs = get_calibration_coefficients('camera_cal', 9, 6)
 
-    test_img = mpimg.imread('camera_cal/calibration2.jpg')
+    for image_file in os.listdir('camera_cal/'):
+        if image_file.endswith('.jpg'):
+            image = mpimg.imread(os.path.join('camera_cal/', image_file))
+            undst = cv2.undistort(image, mtx, dist, None, mtx)
+            cv2.imwrite(os.path.join('output_images/undistorted_images/chessboard/', image_file),
+                        cv2.cvtColor(undst, cv2.COLOR_RGB2BGR))
 
-    undst = cv2.undistort(test_img, mtx, dist, None, mtx)
-
-    plt.imshow(undst)
-    plt.show()
+    for image_file in os.listdir('test_images/'):
+        if image_file.endswith('.jpg'):
+            image = mpimg.imread(os.path.join('test_images/', image_file))
+            undst = cv2.undistort(image, mtx, dist, None, mtx)
+            cv2.imwrite(os.path.join('output_images/undistorted_images/lane_images/', image_file),
+                        cv2.cvtColor(undst, cv2.COLOR_RGB2BGR))

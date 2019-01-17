@@ -1,6 +1,5 @@
+import os
 import cv2
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 import camera_calibration as cc
@@ -13,7 +12,10 @@ class LaneFinder:
 
     left_fit = None
     right_fit = None
-    is_initial = True
+    prev_left = None
+    prev_right = None
+    count = 0
+    reset = 0
 
     def __init__(self):
         _, mtx, dist, _, _ = cc.get_calibration_coefficients('camera_cal', 9, 6)
@@ -25,12 +27,28 @@ class LaneFinder:
         combined_binary = self.color_and_gradient_transform(img)
         warped_img, M = pt.warp_image(combined_binary)
 
-        if self.is_initial:
+        if self.count == 0:
             self.left_fit, self.right_fit, left_lane_inds, right_lane_inds, nonzerox, nonzeroy = fl.find_lane_pixels(
                 warped_img)
-            self.is_initial = False
         else:
             self.left_fit, self.right_fit = fl.search_around_polly(warped_img, self.left_fit, self.right_fit)
+
+        status = fl.validate_lines(self.left_fit, self.right_fit)
+
+        if status == True:
+            self.prev_left, self.prev_right = self.left_fit, self.right_fit
+            self.count += 1
+            self.reset = 0
+        else:
+            # Reset
+            if self.reset > 4:
+                self.left_fit, self.right_fit, left_lane_inds, right_lane_inds, nonzerox, nonzeroy = fl.find_lane_pixels(
+                    warped_img)
+                self.reset = 0
+            else:
+                self.left_fit, self.right_fit = self.prev_left, self.prev_right
+
+                self.reset += 1
 
         return warped_img, self.left_fit, self.right_fit, M
 
@@ -54,14 +72,16 @@ class LaneFinder:
 
 
 if __name__ == '__main__':
-    images = ['test1.jpg', 'test2.jpg', 'test3.jpg', 'test4.jpg', 'test5.jpg', 'test6.jpg']
+    write_path = 'output_images/lane_lines/'
+
     laneFinder = LaneFinder()
-    for fname in images:
-        img = mpimg.imread('test_images/' + fname)
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = laneFinder.lane_drawing_pipeline(img)
-        cv2.imshow('', img)
-        cv2.waitKey(0)
+    for image_file in os.listdir('test_images/'):
+        if image_file.endswith('.jpg'):
+            image = mpimg.imread(os.path.join('test_images/', image_file))
+            cv2.imwrite(write_path + 'original_' + image_file, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+            image = laneFinder.lane_drawing_pipeline(image)
+            cv2.imwrite(write_path + 'lanes_' + image_file, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+
 
     # laneFinder = LaneFinder()
     #

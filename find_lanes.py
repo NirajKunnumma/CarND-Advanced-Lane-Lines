@@ -208,3 +208,26 @@ def draw_lanes(image, warped_img, left_fit, right_fit, M, left_curvature, right_
 
     return result
 
+
+def validate_lines(left_fit, right_fit):
+
+    if len(left_fit) == 0 or len(right_fit) == 0:
+        return False
+
+    # Check distance b/w lines
+    ploty = np.linspace(0, 20, num=10)
+    left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
+    diff_lines = np.mean(right_fitx - left_fitx)
+    if not (300 <= diff_lines <= 1000):
+        return False
+
+    left = 2 * left_fit[0] * 600 + left_fit[1]
+    right = 2 * right_fit[0] * 600 + right_fit[1]
+    delta_slope_mid = np.abs(left - right)
+
+    # Check if lines are parallel at the middle
+    if delta_slope_mid > 0.2:
+        return False
+
+    return True
